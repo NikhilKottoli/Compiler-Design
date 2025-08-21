@@ -275,26 +275,35 @@ ESC (\\[abfnrtv\\'"?]|\\x[0-9A-Fa-f]+|\\[0-7]{1,3})
 . { fprintf(out,"[line %d] ERROR: Invalid token '%s'\n",yylineno,yytext); }
 
 <<EOF>> {
-    fprintf(out,"```\n\n## Symbol Table\n\n| Name | Type | Dimensions | Frequency | Return Type | Parameters Lists in Function call |\n|------|------|------------|-----------|-------------|-----------------------------------|\n");
+    fprintf(out,"```\n\n## Symbol Table\n\n| %-15s | %-12s | %-12s | %-9s | %-12s | %-35s |\n", "Name", "Type", "Dimensions", "Frequency", "Return Type", "Parameters Lists in Function call");
+    fprintf(out,"|%s|%s|%s|%s|%s|%s|\n", "-----------------", "--------------", "--------------", "-----------", "--------------", "-------------------------------------");
     for(int i=0;i<SYM_HASH_SIZE;i++){
         for(Symbol* s=symtab[i];s;s=s->next){
-            fprintf(out,"| %s | %s | %s | %d | %s | %s |\n",
-                s->name,
-                s->type ? s->type : "-",
-                s->dimensions ? s->dimensions : "-",
-                s->frequency,
-                s->return_type ? s->return_type : (s->is_function ? "unknown" : "-"),
-                s->param_lists ? s->param_lists : "-"
+            char name_buf[16], type_buf[13], dims_buf[13], ret_buf[13], params_buf[36];
+            
+            // Truncate and pad strings to fit column widths
+            snprintf(name_buf, sizeof(name_buf), "%-15s", s->name ? s->name : "-");
+            snprintf(type_buf, sizeof(type_buf), "%-12s", s->type ? s->type : "-");
+            snprintf(dims_buf, sizeof(dims_buf), "%-12s", s->dimensions ? s->dimensions : "-");
+            snprintf(ret_buf, sizeof(ret_buf), "%-12s", s->return_type ? s->return_type : (s->is_function ? "unknown" : "-"));
+            snprintf(params_buf, sizeof(params_buf), "%-35s", s->param_lists ? s->param_lists : "-");
+            
+            fprintf(out,"| %s | %s | %s | %-9d | %s | %s |\n",
+                name_buf, type_buf, dims_buf, s->frequency, ret_buf, params_buf
             );
         }
     }
-    fprintf(out,"\n## Constant Table\n\n| Variable Name | Line Number | Value | Type |\n|---------------|-------------|-------|------|\n");
+    fprintf(out,"\n## Constant Table\n\n| %-15s | %-11s | %-20s | %-8s |\n", "Variable Name", "Line Number", "Value", "Type");
+    fprintf(out,"|%s|%s|%s|%s|\n", "-----------------", "-------------", "----------------------", "----------");
     for(size_t i=0;i<nconsts;i++){
-        fprintf(out,"| %s | %d | %s | %s |\n",
-            consts[i].var_name ? consts[i].var_name : "-",
-            consts[i].line,
-            consts[i].value ? consts[i].value : "",
-            consts[i].type ? consts[i].type : ""
+        char var_buf[16], val_buf[21], type_buf[9];
+        
+        snprintf(var_buf, sizeof(var_buf), "%-15s", consts[i].var_name ? consts[i].var_name : "-");
+        snprintf(val_buf, sizeof(val_buf), "%-20s", consts[i].value ? consts[i].value : "");
+        snprintf(type_buf, sizeof(type_buf), "%-8s", consts[i].type ? consts[i].type : "");
+        
+        fprintf(out,"| %s | %-11d | %s | %s |\n",
+            var_buf, consts[i].line, val_buf, type_buf
         );
     }
     return 0;
